@@ -50,7 +50,7 @@ setup_node() {
   local zip="$RES/node-win.zip"
   local tmp="$RES/node-tmp"
   mkdir -p "$RES"
-  curl -fL --retry 3 "$NODE_URL" -o "$zip" || fail "下载 Node 失败：$NODE_URL"
+  curl -fL --ssl-no-revoke --retry 3 "$NODE_URL" -o "$zip" || fail "下载 Node 失败：$NODE_URL"
   rm -rf "$tmp"; mkdir -p "$tmp"
   extract_zip "$zip" "$tmp" || fail "解压 Node 失败"
   mv "$tmp/node-v${NODE_VERSION}-win-${NODE_ARCH}" "$NODE_DIR" || fail "移动 Node 目录失败"
