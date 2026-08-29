@@ -187,20 +187,22 @@ fn list_dir(path: String) -> Vec<DirEntry> {
 
 fn find_resource(app: &tauri::AppHandle, relative: &str) -> Option<PathBuf> {
     let mut candidates: Vec<PathBuf> = Vec::new();
+    // 优先：exe 目录（NSIS 安装版资源在 exe 目录的 _up_/resources）
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            candidates.push(dir.join("_up_").join("resources").join(relative));
+            candidates.push(dir.join("resources").join(relative));
+            candidates.push(dir.join(relative));
+        }
+    }
+    // 兜底：resource_dir
     if let Ok(res) = app.path().resource_dir() {
         candidates.push(res.join(relative));
         candidates.push(res.join("resources").join(relative));
-        candidates.push(res.join("_up_").join(relative));
         candidates.push(res.join("_up_").join("resources").join(relative));
     }
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
-            candidates.push(dir.join(relative));
-            candidates.push(dir.join("resources").join(relative));
-            candidates.push(dir.join("_up_").join("resources").join(relative));
-        }
-    }
-    candidates.into_iter().find(|p| p.exists())
+    // 必须是真实文件（is_file 排除 "C:" 这类目录路径）
+    candidates.into_iter().find(|p| p.is_file())
 }
 
 fn kill_port_3080() {
