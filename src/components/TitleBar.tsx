@@ -39,9 +39,8 @@ export default function TitleBar() {
     <div className="titlebar">
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <LogoMark size={30} />
-        <span style={{ fontSize: 14.5, fontWeight: 600, letterSpacing: 0.4 }}>
-          星核
-          <span style={{ color: "var(--text-tertiary)", fontWeight: 400, fontSize: 12.5, marginLeft: 6 }}>StarCore</span>
+        <span style={{ fontSize: 14.5, fontWeight: 600, letterSpacing: 0.2 }}>
+          DeepSeek Harness
         </span>
       </div>
 

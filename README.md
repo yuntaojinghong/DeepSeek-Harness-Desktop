@@ -1,4 +1,4 @@
-# 星核 StarCore 桌面版
+# DeepSeek Harness 桌面版
 
 <p align="center">
   <a href="./README_EN.md">English</a> · <b>中文</b>

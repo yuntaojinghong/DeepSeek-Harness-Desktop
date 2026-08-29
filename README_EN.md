@@ -1,4 +1,4 @@
-# StarCore (星核) Desktop
+# DeepSeek Harness Desktop
 
 <p align="center">
   <a href="./README.md">中文</a> · <b>English</b>
