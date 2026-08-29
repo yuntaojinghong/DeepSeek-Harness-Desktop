@@ -8,8 +8,7 @@ vite.config.ts.timestamp-*.mjs
 ghcli/
 gh.zip
 node-win.zip
-resources/node/
-resources/dsh/
+resources/
 starcore-target/
 dsh-pkg.zip
 .npm-cache/

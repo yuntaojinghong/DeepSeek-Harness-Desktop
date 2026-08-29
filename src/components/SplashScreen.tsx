@@ -2,10 +2,13 @@ import LogoMark from "./Logo";
 
 interface Props {
   leaving?: boolean;
+  status?: string;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 // 启动动画页：深空星野 + 鲸鱼标志辉光 + 环形轨道 + 扫描进度
-export default function SplashScreen({ leaving }: Props) {
+export default function SplashScreen({ leaving, status, error, onRetry }: Props) {
   return (
     <div className={leaving ? "splash splash-leaving" : "splash"}>
       <div className="splash-stars" aria-hidden="true" />
@@ -22,13 +25,24 @@ export default function SplashScreen({ leaving }: Props) {
           <span className="splash-sub">DeepSeek Harness · AI 桌面工作台</span>
         </div>
         <div className="splash-status">
-          <span>正在初始化</span>
-          <span className="splash-dots">
-            <i />
-            <i />
-            <i />
-          </span>
+          {error ? (
+            <span className="splash-error">{error}</span>
+          ) : (
+            <>
+              <span>{status ?? "正在初始化"}</span>
+              <span className="splash-dots">
+                <i />
+                <i />
+                <i />
+              </span>
+            </>
+          )}
         </div>
+        {error && onRetry && (
+          <button className="btn" onClick={onRetry}>
+            重试
+          </button>
+        )}
       </div>
       <div className="splash-bar">
         <div className="splash-bar-fill" />

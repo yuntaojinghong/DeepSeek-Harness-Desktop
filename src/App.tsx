@@ -26,6 +26,8 @@ export default function App() {
 
   const [booting, setBooting] = useState(true);
   const [leaving, setLeaving] = useState(false);
+  const [bootStatus, setBootStatus] = useState("正在启动 DeepSeek Harness 服务…");
+  const [bootError, setBootError] = useState<string | null>(null);
   const [updateInfo, setUpdateInfo] = useState<{ version: string; url: string } | null>(null);
 
   useEffect(() => {
@@ -63,10 +65,28 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasKey]);
 
-  // 启动动画：最短展示约 1.3s 后淡出
+  // 启动流程：Tauri 模式启动内置 DeepSeek Harness 服务后跳转；浏览器预览则直接进入
   useEffect(() => {
-    const t = setTimeout(() => setLeaving(true), 1300);
-    return () => clearTimeout(t);
+    if (!isTauri()) {
+      const t = setTimeout(() => setLeaving(true), 1300);
+      return () => clearTimeout(t);
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        setBootStatus("正在启动 DeepSeek Harness 服务…");
+        await invoke("start_dsh");
+        if (cancelled) return;
+        setBootStatus("服务已就绪，正在进入…");
+        window.location.href = "http://127.0.0.1:3080";
+      } catch (e) {
+        if (!cancelled) setBootError(`启动失败：${String(e)}`);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -94,7 +114,14 @@ export default function App() {
   }, []);
 
   if (booting) {
-    return <SplashScreen leaving={leaving} />;
+    return (
+      <SplashScreen
+        leaving={leaving}
+        status={bootStatus}
+        error={bootError}
+        onRetry={() => window.location.reload()}
+      />
+    );
   }
 
   return (

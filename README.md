@@ -12,29 +12,26 @@
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178c6.svg">
 </p>
 
-开箱即用的 DeepSeek AI 桌面工作台：双击即用、自动补齐运行环境、多模型切换、Agent 工具调用。
+把官方 **DeepSeek Harness**（`dsh`）打包进桌面的开箱即用客户端：双击即用，内置便携版 Node 运行时与官方 Harness，启动即加载官方 Web UI——无需手动装 Node、跑命令或配置环境。
 
 > **星核 StarCore**：驾驭星辰智能的能量核心——科幻风 AI 工作台。
 
 ## ✨ 功能
 
-- **流式对话**：Markdown / 代码高亮 / 表格 / 引用块渲染
-- **多模型切换**：DeepSeek V4 Flash / Pro 实时同步官方接口新增（启动或「设置 → 模型管理」一键刷新，无需升级客户端）；任意 OpenAI 兼容模型（通义 / Kimi / GLM 等），每个模型独立图标
-- **品牌启动动画**：深空星野 + 鲸鱼标志 + 环形轨道 + 扫描进度，1.3s 淡入主界面
+- **内置官方 Harness**：自动打包官方 `@deepseek-ai/dsh`，双击启动官方 Web UI（`127.0.0.1:3080`），插件生态与官方完全一致
+- **一键准备资源**：`npm run setup:resources` 自动下载便携 Node + 安装官方 Harness，无需手动操作
+- **品牌启动动画**：深空星野 + 鲸鱼标志 + 环形轨道 + 扫描进度，服务就绪后自动进入
 - **便携模式**：数据跟随应用目录（`portable.flag` 标记），整个文件夹拷到 U 盘即用
 - **系统托盘**：关窗最小化到托盘，任务不中断；回合完成弹桌面通知
-- **环境自检**：检测 Python / Node / Git，缺失自动补齐便携版运行时
-- **Agent 工具**：代码执行（run_command）、目录列举（list_dir），多轮工具调用
-- **人设卡**：System Prompt 一键切换（编程专家 / 中文文案 / 数据分析 / 翻译官…）
-- **首次引导**：两步配置（填 API Key + 选工作目录）
 - **科幻主题**：深空霓虹配色、星空背景、发光动效，深浅双主题 + 字号/密度自定义
-- 会话导出 MD / JSON、全文搜索、全本地存储、零遥测
+
+> 附带的 React 前端作为**浏览器预览模式**（`npm run dev`）提供：流式对话、多模型切换、官方模型实时同步、Agent 工具调用、人设卡、会话导出 MD / JSON、全文搜索、全本地存储、零遥测。
 
 ## 🛠 技术栈
 
-- **桌面壳**：Tauri 2（Rust 后端，安装包 ~10MB）
-- **前端**：React 18 + TypeScript + Vite
-- **模型**：DeepSeek 官方 API + 任意 OpenAI 兼容服务
+- **桌面壳**：Tauri 2（Rust 后端，安装包 ~10MB + 内置运行时）
+- **核心**：官方 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`@deepseek-ai/dsh`，MIT）+ 便携版 Node 运行时
+- **前端**：React 18 + TypeScript + Vite（浏览器预览模式）
 
 ## 🚀 开发运行
 
@@ -48,6 +45,9 @@
 # 安装依赖
 npm install
 
+# 一键准备内置资源（下载便携 Node + 安装官方 Harness，打包前必须执行）
+npm run setup:resources
+
 # 仅前端预览（浏览器，无系统能力）
 npm run dev
 
@@ -57,6 +57,8 @@ npm run tauri dev
 # 打包安装程序
 npm run tauri build
 ```
+
+> `npm run setup:resources` 会下载便携版 Node 并安装 `@deepseek-ai/dsh` 到 `resources/`（已 gitignore），产物随安装包内置，用户无需自行安装 Node。
 
 ## 📥 下载安装
 
