@@ -97,3 +97,7 @@ deepseek-harness-desktop/
 ## 🤝 贡献
 
 欢迎提交 Issue 与 Pull Request。提交前请确保前端 `npm run build` 与后端 `cargo check` 均通过。
+
+## ™️ 商标
+
+应用图标及品牌素材（鲸鱼 logo）来自 **DeepSeek** 官方开源仓库，仅用于标识本项目与 DeepSeek 的关系。本项目是独立开发的第三方桌面封装工具，与 DeepSeek 公司无官方隶属关系。如需将本项目用于商业再分发，请自行评估并遵守 DeepSeek 的品牌使用条款。
