@@ -1,5 +1,6 @@
 use serde::Serialize;
 use std::process::Command;
+use tauri::Manager;
 
 #[derive(Serialize, Clone)]
 struct RuntimeInfo {
