@@ -232,8 +232,15 @@ fn start_dsh(app: tauri::AppHandle, state: State<DshProcess>) -> Result<String, 
     // 清理占用 3080 的残留进程（避免端口冲突导致 dsh 退出）
     kill_port_3080();
 
+    let data_dir = portable_data_dir(&app);
+    let log_path = data_dir.join("dsh.log");
+    if let Some(p) = log_path.parent() {
+        let _ = std::fs::create_dir_all(p);
+    }
+    let log_file = std::fs::File::create(&log_path).map_err(|e| e.to_string())?;
+
     let child = Command::new(&node)
-        .env("DSH_HOME", portable_data_dir(&app))
+        .env("DSH_HOME", &data_dir)
         .arg(&dsh_bin)
         .arg("web")
         .arg("--host")
@@ -242,7 +249,7 @@ fn start_dsh(app: tauri::AppHandle, state: State<DshProcess>) -> Result<String, 
         .arg("3080")
         .arg("--no-open")
         .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::from(log_file))
         .spawn()
         .map_err(|e| format!("启动 dsh 失败: {e}"))?;
 
@@ -255,20 +262,20 @@ fn start_dsh(app: tauri::AppHandle, state: State<DshProcess>) -> Result<String, 
         }
         let mut guard = state.0.lock().unwrap();
         let mut exited = false;
-        let mut err_msg = String::new();
         if let Some(c) = guard.as_mut() {
             if let Ok(Some(_status)) = c.try_wait() {
                 exited = true;
-                if let Some(mut stderr) = c.stderr.take() {
-                    use std::io::Read;
-                    let _ = stderr.read_to_string(&mut err_msg);
-                }
             }
         }
         drop(guard);
         if exited {
-            let last = err_msg.trim().lines().last().unwrap_or("未知错误");
-            return Err(format!("dsh 进程启动后意外退出：{last}"));
+            let mut full = String::new();
+            if let Ok(mut f) = std::fs::File::open(&log_path) {
+                use std::io::Read;
+                let _ = f.read_to_string(&mut full);
+            }
+            let truncated: String = full.trim().chars().take(800).collect();
+            return Err(format!("dsh 启动失败：{truncated}"));
         }
         std::thread::sleep(std::time::Duration::from_millis(500));
     }

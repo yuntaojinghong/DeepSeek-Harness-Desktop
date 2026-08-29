@@ -59,7 +59,7 @@ npm run tauri build
 
 ## 📥 Download & Install
 
-Get the latest `StarCore_0.1.0_x64-setup.exe` from [Releases](https://github.com/yuntaojinghong/StarCore/releases) and double-click to install (installs to the user directory, no admin required, creates a desktop shortcut automatically).
+Get the latest `StarCore_*.exe` from [Releases](https://github.com/yuntaojinghong/StarCore/releases) and double-click to install (installs to the user directory, no admin required, creates a desktop shortcut automatically).
 
 > Prefer portable? Place an empty `portable.flag` file next to the app directory and data will follow the app — copy the whole folder to a USB stick and use it anywhere.
 
