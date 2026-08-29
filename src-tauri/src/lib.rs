@@ -203,6 +203,21 @@ fn find_resource(app: &tauri::AppHandle, relative: &str) -> Option<PathBuf> {
     candidates.into_iter().find(|p| p.exists())
 }
 
+fn kill_port_3080() {
+    if let Ok(out) = Command::new("netstat").args(["-ano"]).output() {
+        let s = String::from_utf8_lossy(&out.stdout);
+        for line in s.lines() {
+            if line.contains(":3080") && line.to_ascii_uppercase().contains("LISTENING") {
+                if let Some(pid) = line.split_whitespace().last() {
+                    let _ = Command::new("taskkill")
+                        .args(["/F", "/PID", pid])
+                        .output();
+                }
+            }
+        }
+    }
+}
+
 #[tauri::command]
 fn start_dsh(app: tauri::AppHandle, state: State<DshProcess>) -> Result<String, String> {
     let node = find_resource(&app, "node/node.exe").ok_or_else(|| "内置 Node 缺失".to_string())?;
@@ -214,6 +229,9 @@ fn start_dsh(app: tauri::AppHandle, state: State<DshProcess>) -> Result<String, 
         let _ = c.wait();
     }
 
+    // 清理占用 3080 的残留进程（避免端口冲突导致 dsh 退出）
+    kill_port_3080();
+
     let child = Command::new(&node)
         .env("DSH_HOME", portable_data_dir(&app))
         .arg(&dsh_bin)
@@ -222,6 +240,9 @@ fn start_dsh(app: tauri::AppHandle, state: State<DshProcess>) -> Result<String, 
         .arg("127.0.0.1")
         .arg("--port")
         .arg("3080")
+        .arg("--no-open")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::piped())
         .spawn()
         .map_err(|e| format!("启动 dsh 失败: {e}"))?;
 
@@ -232,19 +253,26 @@ fn start_dsh(app: tauri::AppHandle, state: State<DshProcess>) -> Result<String, 
         if std::net::TcpStream::connect(("127.0.0.1", 3080)).is_ok() {
             return Ok("dsh ready".into());
         }
-        let exited = state
-            .0
-            .lock()
-            .unwrap()
-            .as_mut()
-            .and_then(|c| c.try_wait().ok().flatten())
-            .is_some();
+        let mut guard = state.0.lock().unwrap();
+        let mut exited = false;
+        let mut err_msg = String::new();
+        if let Some(c) = guard.as_mut() {
+            if let Ok(Some(_status)) = c.try_wait() {
+                exited = true;
+                if let Some(mut stderr) = c.stderr.take() {
+                    use std::io::Read;
+                    let _ = stderr.read_to_string(&mut err_msg);
+                }
+            }
+        }
+        drop(guard);
         if exited {
-            return Err("dsh 进程启动后意外退出".into());
+            let last = err_msg.trim().lines().last().unwrap_or("未知错误");
+            return Err(format!("dsh 进程启动后意外退出：{last}"));
         }
         std::thread::sleep(std::time::Duration::from_millis(500));
     }
-    Err("dsh 启动超时".into())
+    Err("dsh 启动超时（90 秒）".into())
 }
 
 #[tauri::command]
