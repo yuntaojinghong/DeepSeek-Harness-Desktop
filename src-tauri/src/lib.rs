@@ -1,10 +1,13 @@
 use serde::Serialize;
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::Mutex;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
-use tauri::{Manager, WindowEvent};
+use tauri::{Manager, State, WindowEvent};
 use tauri_plugin_notification::NotificationExt;
+
+struct DshProcess(Mutex<Option<std::process::Child>>);
 
 #[derive(Serialize, Clone)]
 struct RuntimeInfo {
@@ -182,17 +185,73 @@ fn list_dir(path: String) -> Vec<DirEntry> {
     out
 }
 
+#[tauri::command]
+fn start_dsh(app: tauri::AppHandle, state: State<DshProcess>) -> Result<String, String> {
+    let res = app.path().resource_dir().map_err(|e| e.to_string())?;
+    let node = res.join("node").join("node.exe");
+    let dsh_bin = res
+        .join("dsh")
+        .join("node_modules")
+        .join("@deepseek-ai")
+        .join("dsh")
+        .join("lib")
+        .join("bin.js");
+
+    if !node.exists() {
+        return Err(format!("内置 Node 缺失: {}", node.display()));
+    }
+    if !dsh_bin.exists() {
+        return Err(format!("dsh 缺失: {}", dsh_bin.display()));
+    }
+
+    if let Some(mut c) = state.0.lock().unwrap().take() {
+        let _ = c.kill();
+        let _ = c.wait();
+    }
+
+    let child = Command::new(&node)
+        .env("DSH_HOME", portable_data_dir(&app))
+        .arg(&dsh_bin)
+        .arg("web")
+        .arg("--host")
+        .arg("127.0.0.1")
+        .arg("--port")
+        .arg("3080")
+        .spawn()
+        .map_err(|e| format!("启动 dsh 失败: {e}"))?;
+
+    *state.0.lock().unwrap() = Some(child);
+    Ok("dsh started".into())
+}
+
+#[tauri::command]
+fn stop_dsh(state: State<DshProcess>) {
+    if let Some(mut c) = state.0.lock().unwrap().take() {
+        let _ = c.kill();
+        let _ = c.wait();
+    }
+}
+
+#[tauri::command]
+fn dsh_status(state: State<DshProcess>) -> bool {
+    state.0.lock().unwrap().is_some()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
+        .manage(DshProcess(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             check_env,
             run_command,
             list_dir,
             read_store,
             write_store,
-            notify
+            notify,
+            start_dsh,
+            stop_dsh,
+            dsh_status
         ])
         .setup(|app| {
             let show_i = MenuItem::with_id(app, "show", "显示主界面", true, None::<&str>)?;
