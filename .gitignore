@@ -4,5 +4,6 @@ src-tauri/target/
 src-tauri/gen/
 rustup-init.exe
 vs_buildtools.exe
+vite.config.ts.timestamp-*.mjs
 *.log
 .DS_Store
