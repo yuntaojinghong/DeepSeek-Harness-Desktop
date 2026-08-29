@@ -10,6 +10,8 @@ import {
   saveSelected,
   saveSettings,
   uid,
+  readDiskData,
+  writeDiskData,
 } from "./lib/storage";
 
 interface AppState {
@@ -24,15 +26,19 @@ interface AppState {
   contextOpen: boolean;
   settingsOpen: boolean;
   envOpen: boolean;
+  welcomeOpen: boolean;
   searchQuery: string;
+  hydrated: boolean;
 
   activeConversation: () => Conversation | null;
+  hydrate: () => Promise<void>;
   setActive: (id: string) => void;
   newConversation: (modelId?: string) => string;
   renameConversation: (id: string, title: string) => void;
   deleteConversation: (id: string) => void;
   updateConversation: (id: string, fn: (c: Conversation) => Conversation) => void;
   searchConversations: () => Conversation[];
+  setPersona: (personaId: string) => void;
 
   setSettings: (s: Partial<AppSettings>) => void;
   setApiKey: (provider: string, key: string) => void;
@@ -47,6 +53,7 @@ interface AppState {
   setContextOpen: (v: boolean) => void;
   setSettingsOpen: (v: boolean) => void;
   setEnvOpen: (v: boolean) => void;
+  setWelcomeOpen: (v: boolean) => void;
   setSearchQuery: (q: string) => void;
 }
 
@@ -67,11 +74,41 @@ export const useAppStore = create<AppState>((set, get) => ({
   contextOpen: true,
   settingsOpen: false,
   envOpen: false,
+  welcomeOpen: false,
   searchQuery: "",
+  hydrated: false,
 
   activeConversation: () => {
     const s = get();
     return s.conversations.find((c) => c.id === s.activeId) ?? null;
+  },
+
+  hydrate: async () => {
+    const disk = await readDiskData();
+    if (disk) {
+      saveConversations(disk.conversations);
+      saveSettings(disk.settings);
+      saveModels(disk.models);
+      saveSelected(disk.selected);
+      set({
+        conversations: disk.conversations,
+        settings: disk.settings,
+        models: disk.models,
+        activeId: disk.conversations.some((c) => c.id === disk.selected)
+          ? disk.selected
+          : disk.conversations[0]?.id ?? null,
+        hydrated: true,
+      });
+    } else {
+      set({ hydrated: true });
+    }
+  },
+
+  setPersona: (personaId) => {
+    const conv = get().activeConversation();
+    if (conv) {
+      get().updateConversation(conv.id, (c) => ({ ...c, systemPromptId: personaId }));
+    }
   },
 
   setActive: (id) => {
@@ -166,5 +203,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   setContextOpen: (v) => set({ contextOpen: v }),
   setSettingsOpen: (v) => set({ settingsOpen: v }),
   setEnvOpen: (v) => set({ envOpen: v }),
+  setWelcomeOpen: (v) => set({ welcomeOpen: v }),
   setSearchQuery: (q) => set({ searchQuery: q }),
 }));
+
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+useAppStore.subscribe((state) => {
+  if (!state.hydrated) return;
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    writeDiskData({
+      conversations: state.conversations,
+      settings: state.settings,
+      models: state.models,
+      selected: state.activeId ?? state.settings.defaultModelId,
+    });
+  }, 400);
+});

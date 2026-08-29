@@ -84,7 +84,7 @@ export default function EnvModal() {
             <div style={{ marginTop: 14, padding: "10px 14px", borderRadius: 10, background: "var(--bg-secondary)", fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.7 }}>
               系统：{env.os} · 架构：{env.arch}
               <br />
-              应用目录：{env.appDir}
+              {env.portable ? "便携模式：数据跟随应用目录" : "数据目录"}：{env.dataDir}
             </div>
           )}
 

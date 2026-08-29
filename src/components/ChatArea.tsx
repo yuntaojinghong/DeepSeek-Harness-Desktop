@@ -3,10 +3,11 @@ import { useAppStore } from "../store";
 import type { ChatMessage, ToolCallRecord } from "../types";
 import { streamChat, type ToolCallChunk } from "../lib/llm";
 import { listDir, runTool } from "../lib/env";
-import { uid, exportConversationJson, exportConversationMarkdown } from "../lib/storage";
+import { uid, exportConversationJson, exportConversationMarkdown, PERSONAS, notify } from "../lib/storage";
 import MessageBubble from "./MessageBubble";
 import Composer from "./Composer";
 import LogoMark from "./Logo";
+import PersonaMenu from "./PersonaMenu";
 import { SparkIcon } from "./Icons";
 
 const AGENT_TOOLS = [
@@ -104,10 +105,13 @@ export default function ChatArea() {
     const abort = new AbortController();
     abortRef.current = abort;
 
-    const apiMessages: Record<string, unknown>[] = active!.messages
+    const apiMessages: Record<string, unknown>[] = [];
+    const persona = PERSONAS.find((p) => p.id === active!.systemPromptId);
+    if (persona?.prompt) apiMessages.push({ role: "system", content: persona.prompt });
+    active!.messages
       .filter((m) => m.role === "user" || m.role === "assistant")
       .filter((m) => !m.streaming && !m.error)
-      .map((m) => ({ role: m.role, content: m.content }));
+      .forEach((m) => apiMessages.push({ role: m.role, content: m.content }));
     apiMessages.push({ role: "user", content: text });
 
     const withTools = model.supportsTools && (tools.code || tools.file || tools.search);
@@ -179,6 +183,7 @@ export default function ChatArea() {
       }
 
       patchAsst(convId, asstMsg.id, (m) => ({ ...m, streaming: false }));
+      notify("星核 StarCore", "已生成回复");
     } catch (e) {
       if (!abort.signal.aborted) {
         const errMsg = e instanceof Error ? e.message : String(e);
@@ -217,6 +222,7 @@ export default function ChatArea() {
           <span style={{ fontSize: 13.5, fontWeight: 500, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {conv.title || "新会话"}
           </span>
+          <PersonaMenu />
           <button className="btn btn-sm btn-ghost" onClick={() => exportConversationMarkdown(conv)}>导出 MD</button>
           <button className="btn btn-sm btn-ghost" onClick={() => exportConversationJson(conv)}>导出 JSON</button>
         </div>

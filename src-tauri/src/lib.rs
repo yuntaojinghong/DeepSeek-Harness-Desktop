@@ -1,6 +1,10 @@
 use serde::Serialize;
+use std::path::PathBuf;
 use std::process::Command;
-use tauri::Manager;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::TrayIconBuilder;
+use tauri::{Manager, WindowEvent};
+use tauri_plugin_notification::NotificationExt;
 
 #[derive(Serialize, Clone)]
 struct RuntimeInfo {
@@ -10,13 +14,15 @@ struct RuntimeInfo {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct EnvStatus {
     python: Option<RuntimeInfo>,
     node: Option<RuntimeInfo>,
     git: Option<RuntimeInfo>,
     os: String,
     arch: String,
-    app_dir: String,
+    data_dir: String,
+    portable: bool,
 }
 
 fn detect(cmd: &str, version_args: &[&str]) -> RuntimeInfo {
@@ -54,6 +60,33 @@ fn detect(cmd: &str, version_args: &[&str]) -> RuntimeInfo {
     }
 }
 
+fn is_portable() -> bool {
+    std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(|d| d.join("portable.flag").exists()))
+        .unwrap_or(false)
+}
+
+fn portable_data_dir(app: &tauri::AppHandle) -> PathBuf {
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            if dir.join("portable.flag").exists() {
+                return dir.join("data");
+            }
+        }
+    }
+    app.path()
+        .app_data_dir()
+        .unwrap_or_default()
+        .join("data")
+}
+
+fn sanitize_key(key: &str) -> String {
+    key.chars()
+        .filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
+        .collect()
+}
+
 #[tauri::command]
 fn check_env(app: tauri::AppHandle) -> EnvStatus {
     EnvStatus {
@@ -62,12 +95,28 @@ fn check_env(app: tauri::AppHandle) -> EnvStatus {
         git: Some(detect("git", &["--version"])),
         os: std::env::consts::OS.to_string(),
         arch: std::env::consts::ARCH.to_string(),
-        app_dir: app
-            .path()
-            .app_data_dir()
-            .map(|p| p.display().to_string())
-            .unwrap_or_default(),
+        data_dir: portable_data_dir(&app).display().to_string(),
+        portable: is_portable(),
     }
+}
+
+#[tauri::command]
+fn read_store(app: tauri::AppHandle, key: String) -> Result<String, String> {
+    let path = portable_data_dir(&app).join(format!("{}.json", sanitize_key(&key)));
+    std::fs::read_to_string(&path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn write_store(app: tauri::AppHandle, key: String, value: String) -> Result<(), String> {
+    let dir = portable_data_dir(&app);
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let path = dir.join(format!("{}.json", sanitize_key(&key)));
+    std::fs::write(&path, value).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn notify(app: tauri::AppHandle, title: String, body: String) {
+    let _ = app.notification().builder().title(title).body(body).show();
 }
 
 #[derive(Serialize)]
@@ -99,6 +148,7 @@ fn run_command(command: String, args: Vec<String>, cwd: Option<String>) -> RunRe
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct DirEntry {
     name: String,
     is_dir: bool,
@@ -135,7 +185,48 @@ fn list_dir(path: String) -> Vec<DirEntry> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![check_env, run_command, list_dir])
+        .plugin(tauri_plugin_notification::init())
+        .invoke_handler(tauri::generate_handler![
+            check_env,
+            run_command,
+            list_dir,
+            read_store,
+            write_store,
+            notify
+        ])
+        .setup(|app| {
+            let show_i = MenuItem::with_id(app, "show", "显示主界面", true, None::<&str>)?;
+            let quit_i = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
+
+            let _tray = TrayIconBuilder::new()
+                .icon(app.default_window_icon().unwrap().clone())
+                .tooltip("星核 StarCore")
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(w) = app.get_webview_window("main") {
+                            let _ = w.show();
+                            let _ = w.unminimize();
+                            let _ = w.set_focus();
+                        }
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
+                })
+                .build(app)?;
+
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                let _ = window.hide();
+                api.prevent_close();
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

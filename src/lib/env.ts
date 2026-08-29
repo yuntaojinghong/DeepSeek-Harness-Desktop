@@ -27,7 +27,8 @@ function browserFallback(): EnvStatus {
     git: null,
     os: `${navigator.platform} (浏览器预览)`,
     arch: "—",
-    appDir: "浏览器预览模式 · 无应用目录",
+    dataDir: "浏览器预览模式 · 无应用目录",
+    portable: false,
   };
 }
 

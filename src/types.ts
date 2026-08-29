@@ -23,7 +23,9 @@ export interface Conversation {
   title: string;
   messages: ChatMessage[];
   modelId: string;
+  systemPromptId?: string;
   workspace?: string;
+  archived?: boolean;
   createdAt: number;
   updatedAt: number;
 }
@@ -56,7 +58,15 @@ export interface EnvStatus {
   git: { installed: boolean; version?: string; path?: string } | null;
   os: string;
   arch: string;
-  appDir: string;
+  dataDir: string;
+  portable: boolean;
+}
+
+export interface Persona {
+  id: string;
+  name: string;
+  color: string;
+  prompt: string;
 }
 
 export interface ToolToggle {
