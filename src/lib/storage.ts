@@ -3,6 +3,7 @@ import type { AppSettings, Conversation, ModelConfig, Persona } from "../types";
 const K_CONVERSATIONS = "dh.conversations";
 const K_SETTINGS = "dh.settings";
 const K_MODELS = "dh.models";
+const K_OFFICIAL_MODELS = "dh.officialModels";
 const K_SELECTED = "dh.selected";
 
 export function uid(): string {
@@ -63,25 +64,47 @@ export const BUILTIN_MODELS: ModelConfig[] = [
     supportsTools: true,
     builtin: true,
   },
-  {
-    id: "deepseek-v4-flash-vision-exp",
-    name: "DeepSeek V4 Vision",
-    provider: "deepseek",
-    baseUrl: "https://api.deepseek.com/v1",
-    model: "deepseek-v4-flash-vision-exp",
-    contextWindow: 1000000,
-    supportsTools: true,
-    builtin: true,
-  },
 ];
 
-export function loadModels(): ModelConfig[] {
-  try {
-    const extra = JSON.parse(localStorage.getItem(K_MODELS) || "[]");
-    return [...BUILTIN_MODELS, ...extra];
-  } catch {
-    return [...BUILTIN_MODELS];
+export function dedupeModels(...groups: ModelConfig[][]): ModelConfig[] {
+  const seen = new Set<string>();
+  const out: ModelConfig[] = [];
+  for (const group of groups) {
+    for (const m of group) {
+      if (seen.has(m.id)) continue;
+      seen.add(m.id);
+      out.push(m);
+    }
   }
+  return out;
+}
+
+export function loadCustomModels(): ModelConfig[] {
+  try {
+    return JSON.parse(localStorage.getItem(K_MODELS) || "[]") as ModelConfig[];
+  } catch {
+    return [];
+  }
+}
+
+export function saveCustomModels(list: ModelConfig[]) {
+  localStorage.setItem(K_MODELS, JSON.stringify(list));
+}
+
+export function loadOfficialModels(): ModelConfig[] {
+  try {
+    return JSON.parse(localStorage.getItem(K_OFFICIAL_MODELS) || "[]") as ModelConfig[];
+  } catch {
+    return [];
+  }
+}
+
+export function saveOfficialModels(list: ModelConfig[]) {
+  localStorage.setItem(K_OFFICIAL_MODELS, JSON.stringify(list));
+}
+
+export function loadModels(): ModelConfig[] {
+  return dedupeModels(BUILTIN_MODELS, loadOfficialModels(), loadCustomModels());
 }
 
 export function saveModels(list: ModelConfig[]) {
@@ -157,6 +180,7 @@ export interface DiskData {
   conversations: Conversation[];
   settings: AppSettings;
   models: ModelConfig[];
+  officialModels: ModelConfig[];
   selected: string;
 }
 
@@ -171,10 +195,12 @@ export async function readDiskData(): Promise<DiskData | null> {
     const raw = await invoke<string>("read_store", { key: "data" });
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<DiskData>;
+    const official = parsed.officialModels ?? [];
     return {
       conversations: parsed.conversations ?? [],
       settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
-      models: [...BUILTIN_MODELS, ...(parsed.models ?? []).filter((m) => !m.builtin)],
+      models: dedupeModels(BUILTIN_MODELS, official, (parsed.models ?? []).filter((m) => !m.builtin)),
+      officialModels: official,
       selected: parsed.selected ?? "deepseek-v4-flash",
     };
   } catch {
@@ -192,6 +218,7 @@ export async function writeDiskData(data: DiskData) {
         conversations: data.conversations,
         settings: data.settings,
         models: data.models.filter((m) => !m.builtin),
+        officialModels: data.officialModels,
         selected: data.selected,
       }),
     });

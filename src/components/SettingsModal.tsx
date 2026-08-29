@@ -12,6 +12,8 @@ export default function SettingsModal() {
   const models = useAppStore((s) => s.models);
   const addModel = useAppStore((s) => s.addModel);
   const removeModel = useAppStore((s) => s.removeModel);
+  const refreshModels = useAppStore((s) => s.refreshModels);
+  const modelsRefreshing = useAppStore((s) => s.modelsRefreshing);
   const setSettingsOpen = useAppStore((s) => s.setSettingsOpen);
 
   const [tab, setTab] = useState<"keys" | "models" | "prefs">("keys");
@@ -119,6 +121,27 @@ export default function SettingsModal() {
 
           {tab === "models" && (
             <div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  marginBottom: 10,
+                  padding: "10px 14px",
+                  borderRadius: 12,
+                  background: "var(--primary-weak)",
+                  border: "1px solid var(--primary-weak-2)",
+                }}
+              >
+                <span style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                  已连接 DeepSeek 官方接口时，可实时拉取最新模型列表（自动同步官方上新）。
+                </span>
+                <button className="btn btn-primary btn-sm" onClick={() => refreshModels()} disabled={modelsRefreshing}>
+                  {modelsRefreshing ? "刷新中…" : "刷新官方模型"}
+                </button>
+              </div>
+
               {models.map((m) => (
                 <div className="field-card" key={m.id}>
                   <div className="field-card-title">

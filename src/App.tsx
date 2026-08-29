@@ -7,7 +7,7 @@ import ContextPanel from "./components/ContextPanel";
 import SettingsModal from "./components/SettingsModal";
 import EnvModal from "./components/EnvModal";
 import WelcomeModal from "./components/WelcomeModal";
-import LogoMark from "./components/Logo";
+import SplashScreen from "./components/SplashScreen";
 import { isTauri } from "./lib/env";
 
 export default function App() {
@@ -19,12 +19,13 @@ export default function App() {
   const envOpen = useAppStore((s) => s.envOpen);
   const setEnv = useAppStore((s) => s.setEnv);
   const hydrate = useAppStore((s) => s.hydrate);
+  const refreshModels = useAppStore((s) => s.refreshModels);
   const welcomeOpen = useAppStore((s) => s.welcomeOpen);
   const setWelcomeOpen = useAppStore((s) => s.setWelcomeOpen);
   const hasKey = useAppStore((s) => Object.values(s.settings.apiKeys).some((k) => k.trim()));
 
-  const [booting, setBooting] = useState(isTauri());
-  const [bootError, setBootError] = useState<string | null>(null);
+  const [booting, setBooting] = useState(true);
+  const [leaving, setLeaving] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<{ version: string; url: string } | null>(null);
 
   useEffect(() => {
@@ -56,29 +57,25 @@ export default function App() {
     if (!hasKey) setWelcomeOpen(true);
   }, [hasKey, setWelcomeOpen]);
 
+  // 官方模型实时拉取（已配置 Key 时启动即刷新）
   useEffect(() => {
-    if (!isTauri()) {
-      setBooting(false);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const { invoke } = await import("@tauri-apps/api/core");
-        // Rust 端会阻塞直到 dsh 服务就绪（或超时/失败）
-        await invoke("start_dsh");
-        if (!cancelled) {
-          window.location.href = "http://127.0.0.1:3080";
-        }
-      } catch (e) {
-        if (!cancelled) setBootError(`启动失败：${String(e)}`);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    if (hasKey) refreshModels();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasKey]);
+
+  // 启动动画：最短展示约 1.3s 后淡出
+  useEffect(() => {
+    const t = setTimeout(() => setLeaving(true), 1300);
+    return () => clearTimeout(t);
   }, []);
 
+  useEffect(() => {
+    if (!leaving) return;
+    const t = setTimeout(() => setBooting(false), 450);
+    return () => clearTimeout(t);
+  }, [leaving]);
+
+  // 检查新版本
   useEffect(() => {
     if (!isTauri()) return;
     (async () => {
@@ -97,51 +94,7 @@ export default function App() {
   }, []);
 
   if (booting) {
-    return (
-      <div className="empty-state">
-        <div className="logo-float">
-          <LogoMark size={80} radius={22} />
-        </div>
-        <div>
-          <div style={{ fontSize: 20, fontWeight: 600, color: "var(--text)" }}>星核 StarCore</div>
-          <div style={{ fontSize: 13, marginTop: 8, color: "var(--text-secondary)" }}>
-            {bootError ? (
-              <span style={{ color: "var(--danger)" }}>{bootError}</span>
-            ) : (
-              "正在启动 DeepSeek Harness 服务…"
-            )}
-          </div>
-        </div>
-        {!bootError && <div className="spinner" />}
-        {bootError && (
-          <button className="btn" onClick={() => window.location.reload()}>
-            重试
-          </button>
-        )}
-        {updateInfo && !bootError && (
-          <div
-            style={{
-              marginTop: 4,
-              padding: "8px 14px",
-              borderRadius: 10,
-              background: "var(--primary-weak)",
-              color: "var(--primary)",
-              fontSize: 12.5,
-            }}
-          >
-            发现新版本 <b>{updateInfo.version}</b>，可
-            <a
-              href={updateInfo.url}
-              target="_blank"
-              rel="noreferrer"
-              style={{ color: "var(--primary)", fontWeight: 600, textDecoration: "underline" }}
-            >
-              前往下载
-            </a>
-          </div>
-        )}
-      </div>
-    );
+    return <SplashScreen leaving={leaving} />;
   }
 
   return (
@@ -152,6 +105,21 @@ export default function App() {
         <ChatArea />
         {contextOpen && <ContextPanel />}
       </div>
+
+      {updateInfo && (
+        <div className="update-banner">
+          <span>
+            发现新版本 <b>{updateInfo.version}</b>
+          </span>
+          <a href={updateInfo.url} target="_blank" rel="noreferrer">
+            前往下载
+          </a>
+          <button className="btn-icon btn-ghost" onClick={() => setUpdateInfo(null)} title="关闭">
+            ×
+          </button>
+        </div>
+      )}
+
       {welcomeOpen && <WelcomeModal />}
       {settingsOpen && <SettingsModal />}
       {envOpen && <EnvModal />}

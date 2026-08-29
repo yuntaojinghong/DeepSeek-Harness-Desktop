@@ -6,7 +6,7 @@
 
 <p align="center">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-blue.svg">
-  <img alt="GitHub stars" src="https://img.shields.io/github/stars/yuntaojinghong/StarCore?style=social">
+  <img alt="GitHub stars" src="https://img.shields.io/github/stars/yuntaojinghong/DeepSeek-Harness-Desktop?style=social">
   <img alt="Tauri" src="https://img.shields.io/badge/Tauri-2-24c8db.svg">
   <img alt="React" src="https://img.shields.io/badge/React-18-61dafb.svg">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178c6.svg">
@@ -19,7 +19,8 @@
 ## ✨ 功能
 
 - **流式对话**：Markdown / 代码高亮 / 表格 / 引用块渲染
-- **多模型切换**：DeepSeek V3 / R1 全系 + 任意 OpenAI 兼容模型（通义 / Kimi / GLM 等），每个模型独立图标
+- **多模型切换**：DeepSeek V4 Flash / Pro 实时同步官方接口新增（启动或「设置 → 模型管理」一键刷新，无需升级客户端）；任意 OpenAI 兼容模型（通义 / Kimi / GLM 等），每个模型独立图标
+- **品牌启动动画**：深空星野 + 鲸鱼标志 + 环形轨道 + 扫描进度，1.3s 淡入主界面
 - **便携模式**：数据跟随应用目录（`portable.flag` 标记），整个文件夹拷到 U 盘即用
 - **系统托盘**：关窗最小化到托盘，任务不中断；回合完成弹桌面通知
 - **环境自检**：检测 Python / Node / Git，缺失自动补齐便携版运行时
@@ -59,7 +60,7 @@ npm run tauri build
 
 ## 📥 下载安装
 
-前往 [Releases](https://github.com/yuntaojinghong/StarCore/releases) 下载最新的 `StarCore_*.exe` 安装包，双击安装即可（默认装到用户目录，无需管理员权限，自动创建桌面快捷方式）。
+前往 [Releases](https://github.com/yuntaojinghong/DeepSeek-Harness-Desktop/releases) 下载最新的 `DeepSeek-Harness-Desktop_*.exe` 安装包，双击安装即可（默认装到用户目录，无需管理员权限，自动创建桌面快捷方式）。
 
 > 想绿色便携使用？在安装目录旁放置一个空的 `portable.flag` 文件，数据就会跟随应用目录存储，整个文件夹拷到 U 盘即可随处使用。
 
@@ -74,13 +75,13 @@ npm run tauri build
 ```
 deepseek-harness-desktop/
 ├── src/                    # React 前端
-│   ├── App.tsx             # 布局与主题
-│   ├── store.ts            # zustand 全局状态
-│   ├── components/         # 界面组件
-│   ├── lib/                # llm 流式客户端 / env 检测 / storage
-│   └── styles/global.css   # 设计系统
+│   ├── App.tsx             # 布局、启动动画、主题
+│   ├── store.ts            # zustand 全局状态（含官方模型实时拉取）
+│   ├── components/         # 界面组件（含 SplashScreen 启动动画）
+│   ├── lib/                # llm 流式客户端 / env 检测 / storage / models
+│   └── styles/global.css   # 设计系统（含启动动画关键帧）
 └── src-tauri/              # Rust 后端
-    ├── src/lib.rs          # check_env / run_command / list_dir / 存储 / 托盘 / 通知
+    ├── src/lib.rs          # check_env / run_command / list_dir / 存储 / 托盘 / 通知 / update
     ├── tauri.conf.json
     └── Cargo.toml
 ```

@@ -1,108 +1,169 @@
-import struct, os, math
+"""
+DeepSeek Harness 桌面版 · NSIS 安装程序品牌图片生成
 
-def make_bmp_8bit(width, height, pixels_rgb, palette_rgb):
-    # pixels_rgb: list of rows (top->bottom), each row list of (r,g,b)
-    # palette_rgb: list of up to 256 (r,g,b) tuples
-    assert len(palette_rgb) <= 256
-    # pad palette to 256 entries with black
-    while len(palette_rgb) < 256:
-        palette_rgb.append((0, 0, 0))
+输出:
+  installer-header.bmp / .png   (150 x 57, 24-bit)
+  installer-sidebar.bmp / .png  (164 x 314, 24-bit)
 
-    # build pixel index data using nearest-neighbor quantization
-    def nearest(r, g, b):
-        best = 0
-        best_d = 1 << 30
-        for i, (pr, pg, pb) in enumerate(palette_rgb):
-            d = (r - pr) ** 2 + (g - pg) ** 2 + (b - pb) ** 2
-            if d < best_d:
-                best_d = d
-                best = i
-        return best
+依赖: Pillow, assets/whale.png (由 assets/whale.svg 栅格化生成)
+"""
 
-    raw = b''
-    for y in range(height - 1, -1, -1):  # bottom-up
-        row = bytes(nearest(*pixels_rgb[y][x]) for x in range(width))
-        # 4-byte row align
-        pad = (4 - (len(row) % 4)) % 4
-        raw += row + b'\x00' * pad
+import os
+import random
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-    file_header = struct.pack('<2sIHHI', b'BM', 14 + 40 + 1024 + len(raw), 0, 0, 14 + 40 + 1024)
-    info_header = struct.pack('<IiiHHIIiiII', 40, width, -height, 1, 8, 0, len(raw), 2835, 2835, 256, 0)
-    palette = b''
-    for r, g, b in palette_rgb:
-        palette += bytes([b, g, r, 0])
-    return file_header + info_header + palette + raw
+HERE = os.path.dirname(os.path.abspath(__file__))
+WHALE = os.path.join(HERE, "assets", "whale.png")
+HEADER_BMP = os.path.join(HERE, "installer-header.bmp")
+HEADER_PNG = os.path.join(HERE, "installer-header.png")
+SIDEBAR_BMP = os.path.join(HERE, "installer-sidebar.bmp")
+SIDEBAR_PNG = os.path.join(HERE, "installer-sidebar.png")
 
-def build_palette():
-    # Deep space gradient + star white + orbit cyan
-    pal = []
-    # deep blue -> deep purple gradient (200 entries)
-    top = (11, 17, 38)
-    bot = (27, 16, 64)
-    for i in range(200):
-        t = i / 199
-        pal.append(tuple(int(top[c] + (bot[c] - top[c]) * t) for c in range(3)))
-    # star white shades (40 entries: 0..255 white mixed with deep blue)
-    for i in range(40):
-        t = i / 39
-        r = int(11 + (255 - 11) * t)
-        g = int(17 + (255 - 17) * t)
-        b = int(38 + (255 - 38) * t)
-        pal.append((r, g, b))
-    # orbit cyan shades (16 entries: deep blue -> bright cyan)
-    for i in range(16):
-        t = i / 15
-        r = int(56 + (56 - 56) * t)
-        g = int(189 + (248 - 189) * t)
-        b = int(248 + (255 - 248) * t)
-        pal.append((r, g, b))
-    return pal
+# 品牌色（深空蓝紫）
+TOP = (16, 33, 74)        # #10214a
+MID = (10, 18, 48)        # #0a1230
+BOT = (24, 18, 70)        # #181246
+CYAN = (34, 211, 238)     # #22d3ee
+INDIGO = (99, 102, 241)   # #6366f1
+LIGHT = (234, 246, 255)
+DIM = (159, 176, 208)
+
 
 def lerp(a, b, t):
     return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
-def render(w, h, cx, cy, spark_rx, spark_ry, with_ring=False, ring_rx=0, ring_ry=0):
-    top = (11, 17, 38)
-    bot = (27, 16, 64)
-    px = [[(0, 0, 0) for _ in range(w)] for _ in range(h)]
+
+def gradient(w, h, top, bot):
+    img = Image.new("RGB", (w, h))
+    px = img.load()
     for y in range(h):
-        t = y / max(1, h - 1)
-        base = lerp(top, bot, t)
+        c = lerp(top, bot, y / max(1, h - 1))
         for x in range(w):
-            r, g, b = base
-            u = abs(x - cx) / spark_rx
-            v = abs(y - cy) / spark_ry
-            s = (u ** 0.5 + v ** 0.5)
-            if s < 1.0:
-                k = (1.0 - s) ** 2
-                r = int(r + (255 - r) * k)
-                g = int(g + (255 - g) * k)
-                b = int(b + (255 - b) * k)
-            if with_ring and ring_rx > 0:
-                dx = (x - cx) / ring_rx
-                dy = (y - cy) / ring_ry
-                d = abs(math.hypot(dx, dy) - 1.0)
-                if d < 0.06:
-                    k = (1.0 - d / 0.06) * 0.8
-                    r = int(r + (56 - r) * k)
-                    g = int(g + (189 - g) * k)
-                    b = int(b + (248 - b) * k)
-            px[y][x] = (min(255, r), min(255, g), min(255, b))
-    return px
+            px[x, y] = c
+    return img
 
-pal = build_palette()
-hdr = render(150, 57, 75, 28, 34, 20)
-with open('installer-header.bmp', 'wb') as f:
-    f.write(make_bmp_8bit(150, 57, hdr, pal))
 
-sdb = render(164, 314, 82, 150, 52, 46, with_ring=True, ring_rx=60, ring_ry=70)
-with open('installer-sidebar.bmp', 'wb') as f:
-    f.write(make_bmp_8bit(164, 314, sdb, pal))
+def stars(w, h, count, seed=7, max_alpha=200):
+    layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    rng = random.Random(seed)
+    d = ImageDraw.Draw(layer)
+    for _ in range(count):
+        x = rng.randint(0, w - 1)
+        y = rng.randint(0, h - 1)
+        s = rng.choice([1, 1, 1, 2])
+        a = rng.randint(90, max_alpha)
+        d.rectangle([x, y, x + s - 1, y + s - 1], fill=(255, 255, 255, a))
+    return layer
 
-# remove old png
-for f in ('installer-header.png', 'installer-sidebar.png'):
-    if os.path.exists(f):
-        try: os.remove(f)
-        except: pass
 
-print("8-bit BMP:", os.path.getsize('installer-header.bmp'), os.path.getsize('installer-sidebar.bmp'))
+def load_font(size, bold=False):
+    candidates = [
+        r"C:\Windows\Fonts\segoeuib.ttf" if bold else r"C:\Windows\Fonts\segoeui.ttf",
+        r"C:\Windows\Fonts\arialbd.ttf" if bold else r"C:\Windows\Fonts\arial.ttf",
+        r"C:\Windows\Fonts\calibrib.ttf" if bold else r"C:\Windows\Fonts\calibri.ttf",
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            try:
+                return ImageFont.truetype(p, size)
+            except Exception:
+                pass
+    return ImageFont.load_default()
+
+
+def glow(size, color, alpha=160, blur=20):
+    g = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(g)
+    d.ellipse([0, 0, size - 1, size - 1], fill=color + (alpha,))
+    return g.filter(ImageFilter.GaussianBlur(blur))
+
+
+def paste_whale(canvas_rgb, whale, size, center, glow_color=CYAN, glow_alpha=150, glow_blur=22):
+    w = whale.resize((size, size), Image.LANCZOS).convert("RGBA")
+    g = glow(int(size * 0.9), glow_color, alpha=glow_alpha, blur=glow_blur)
+    canvas = canvas_rgb.convert("RGBA")
+    cx, cy = center
+    canvas.alpha_composite(g, (cx - g.width // 2, cy - g.height // 2))
+    canvas.alpha_composite(w, (cx - w.width // 2, cy - w.height // 2))
+    return canvas.convert("RGB")
+
+
+def make_header():
+    w, h = 150, 57
+    img = gradient(w, h, TOP, BOT)
+    img = img.convert("RGBA")
+    img.alpha_composite(stars(w, h, 18, seed=3))
+
+    img = paste_whale(img, Image.open(WHALE).convert("RGBA"), 36, (24, h // 2),
+                      glow_color=CYAN, glow_alpha=130, glow_blur=12)
+
+    d = ImageDraw.Draw(img)
+    f_name = load_font(11, bold=True)
+    f_sub = load_font(8, bold=False)
+    f_ver = load_font(7, bold=False)
+    d.text((48, 11), "DeepSeek Harness", fill=LIGHT, font=f_name)
+    d.text((48, 28), "AI Desktop Workbench", fill=DIM, font=f_sub)
+    d.text((48, 42), "v0.3.0", fill=CYAN, font=f_ver)
+    # 底部青色高光线
+    d.rectangle([0, h - 2, w - 1, h - 1], fill=CYAN)
+    # 左侧竖线高亮
+    d.rectangle([0, 0, 1, h - 1], fill=CYAN)
+    return img.convert("RGB")
+
+
+def make_sidebar():
+    w, h = 164, 314
+    img = gradient(w, h, TOP, BOT)
+    img = img.convert("RGBA")
+    img.alpha_composite(stars(w, h, 55, seed=11))
+
+    cx = w // 2
+    # 环形轨道（在鲸鱼后面）
+    d = ImageDraw.Draw(img)
+    d.ellipse([cx - 64, 78, cx + 64, 206], outline=(*CYAN, 80), width=1)
+    d.ellipse([cx - 76, 66, cx + 76, 218], outline=(*INDIGO, 60), width=1)
+
+    img = paste_whale(img, Image.open(WHALE).convert("RGBA"), 92, (cx, 92),
+                      glow_color=CYAN, glow_alpha=170, glow_blur=24)
+
+    d = ImageDraw.Draw(img)
+    f_name = load_font(15, bold=True)
+    f_sub = load_font(10, bold=False)
+    f_ver = load_font(9, bold=False)
+
+    name = "DeepSeek Harness"
+    bb = d.textbbox((0, 0), name, font=f_name)
+    d.text(((w - (bb[2] - bb[0])) // 2, 184), name, fill=LIGHT, font=f_name)
+    sub = "AI Desktop Workbench"
+    bb2 = d.textbbox((0, 0), sub, font=f_sub)
+    d.text(((w - (bb2[2] - bb2[0])) // 2, 206), sub, fill=DIM, font=f_sub)
+    d.line([(cx - 30, 222), (cx + 30, 222)], fill=(*CYAN, 170), width=1)
+    ver = "v0.3.0"
+    bb3 = d.textbbox((0, 0), ver, font=f_ver)
+    d.text(((w - (bb3[2] - bb3[0])) // 2, 228), ver, fill=CYAN, font=f_ver)
+
+    # 底部品牌点缀
+    tag = "STAR CORE"
+    bb4 = d.textbbox((0, 0), tag, font=f_ver)
+    d.text(((w - (bb4[2] - bb4[0])) // 2, h - 22), tag, fill=DIM, font=f_ver)
+    return img.convert("RGB")
+
+
+def main():
+    if not os.path.exists(WHALE):
+        raise SystemExit(f"missing {WHALE} (run: node -e \"sharp('assets/whale.svg',{density:300}).resize(512,512).png().toFile('assets/whale.png')\")")
+
+    header = make_header()
+    sidebar = make_sidebar()
+
+    header.save(HEADER_PNG, "PNG")
+    sidebar.save(SIDEBAR_PNG, "PNG")
+    header.save(HEADER_BMP, "BMP")
+    sidebar.save(SIDEBAR_BMP, "BMP")
+
+    for f in (HEADER_BMP, HEADER_PNG, SIDEBAR_BMP, SIDEBAR_PNG):
+        print(f"{os.path.basename(f)}: {os.path.getsize(f):>6} bytes")
+
+
+if __name__ == "__main__":
+    main()

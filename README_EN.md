@@ -6,7 +6,7 @@
 
 <p align="center">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-blue.svg">
-  <img alt="GitHub stars" src="https://img.shields.io/github/stars/yuntaojinghong/StarCore?style=social">
+  <img alt="GitHub stars" src="https://img.shields.io/github/stars/yuntaojinghong/DeepSeek-Harness-Desktop?style=social">
   <img alt="Tauri" src="https://img.shields.io/badge/Tauri-2-24c8db.svg">
   <img alt="React" src="https://img.shields.io/badge/React-18-61dafb.svg">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178c6.svg">
@@ -19,7 +19,8 @@ A sci-fi themed DeepSeek AI desktop workbench — double-click to run, auto-prov
 ## ✨ Features
 
 - **Streaming chat** with Markdown / code highlighting / tables / blockquotes
-- **Multi-model switching**: full DeepSeek V3 / R1 lineup + any OpenAI-compatible service (Qwen / Kimi / GLM …), each with its own icon
+- **Multi-model switching**: live-sync the DeepSeek V4 Flash / Pro lineup (and any new official models) from the official API on launch — or hit "Refresh official models" in Settings; also supports any OpenAI-compatible service (Qwen / Kimi / GLM …), each with its own icon
+- **Branded splash animation**: deep-space starfield, whale emblem, orbiting ring and scanning bar that fade into the main UI in 1.3s
 - **Portable mode**: data follows the app directory (`portable.flag` marker) — copy the whole folder to a USB stick and run anywhere
 - **System tray**: closing the window minimizes to tray without interrupting tasks; desktop notifications on turn completion
 - **Environment self-check**: detects Python / Node / Git and auto-provisions portable runtimes
@@ -59,7 +60,7 @@ npm run tauri build
 
 ## 📥 Download & Install
 
-Get the latest `StarCore_*.exe` from [Releases](https://github.com/yuntaojinghong/StarCore/releases) and double-click to install (installs to the user directory, no admin required, creates a desktop shortcut automatically).
+Get the latest `DeepSeek-Harness-Desktop_*.exe` from [Releases](https://github.com/yuntaojinghong/DeepSeek-Harness-Desktop/releases) and double-click to install (installs to the user directory, no admin required, creates a desktop shortcut automatically).
 
 > Prefer portable? Place an empty `portable.flag` file next to the app directory and data will follow the app — copy the whole folder to a USB stick and use it anywhere.
 

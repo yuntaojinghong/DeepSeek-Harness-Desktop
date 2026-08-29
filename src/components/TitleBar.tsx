@@ -11,7 +11,6 @@ export default function TitleBar() {
   const settings = useAppStore((s) => s.settings);
   const setSettings = useAppStore((s) => s.setSettings);
   const env = useAppStore((s) => s.env);
-  const envChecking = useAppStore((s) => s.envChecking);
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
   const contextOpen = useAppStore((s) => s.contextOpen);
@@ -32,7 +31,7 @@ export default function TitleBar() {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const envState = !env ? (envChecking ? "busy" : "busy") : [env.python, env.node, env.git].every((r) => r?.installed) ? "ok" : "warn";
+  const envState = !env ? "busy" : [env.python, env.node, env.git].every((r) => r?.installed) ? "ok" : "warn";
   const envLabel = !env ? "环境检测中…" : [env.python, env.node, env.git].every((r) => r?.installed) ? "环境就绪" : "环境待补齐";
 
   return (

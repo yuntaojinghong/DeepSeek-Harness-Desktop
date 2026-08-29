@@ -3,22 +3,30 @@ import type { AppSettings, Conversation, EnvStatus, ModelConfig, ToolToggle } fr
 import {
   loadConversations,
   loadModels,
+  loadOfficialModels,
   loadSelected,
   loadSettings,
   saveConversations,
+  saveCustomModels,
   saveModels,
+  saveOfficialModels,
   saveSelected,
   saveSettings,
   uid,
   readDiskData,
   writeDiskData,
+  BUILTIN_MODELS,
+  dedupeModels,
 } from "./lib/storage";
+import { fetchOfficialModels } from "./lib/models";
 
 interface AppState {
   conversations: Conversation[];
   activeId: string | null;
   settings: AppSettings;
   models: ModelConfig[];
+  officialModels: ModelConfig[];
+  modelsRefreshing: boolean;
   env: EnvStatus | null;
   envChecking: boolean;
   tools: ToolToggle;
@@ -45,6 +53,7 @@ interface AppState {
   addModel: (m: ModelConfig) => void;
   removeModel: (id: string) => void;
   selectModel: (id: string) => void;
+  refreshModels: () => Promise<void>;
 
   setEnv: (e: EnvStatus | null) => void;
   setEnvChecking: (v: boolean) => void;
@@ -67,6 +76,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   })(),
   settings: loadSettings(),
   models: loadModels(),
+  officialModels: loadOfficialModels(),
+  modelsRefreshing: false,
   env: null,
   envChecking: false,
   tools: { code: true, file: true, search: false },
@@ -89,11 +100,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       saveConversations(disk.conversations);
       saveSettings(disk.settings);
       saveModels(disk.models);
+      saveOfficialModels(disk.officialModels);
       saveSelected(disk.selected);
       set({
         conversations: disk.conversations,
         settings: disk.settings,
         models: disk.models,
+        officialModels: disk.officialModels,
         activeId: disk.conversations.some((c) => c.id === disk.selected)
           ? disk.selected
           : disk.conversations[0]?.id ?? null,
@@ -176,20 +189,38 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   addModel: (m) => {
-    const list = [...get().models, m];
-    saveModels(list);
-    set({ models: list });
+    const custom = [...get().models.filter((x) => !x.builtin), m];
+    saveCustomModels(custom);
+    set({ models: dedupeModels(BUILTIN_MODELS, get().officialModels, custom) });
   },
 
   removeModel: (id) => {
-    const list = get().models.filter((m) => m.id !== id);
-    saveModels(list);
-    set({ models: list });
+    const custom = get().models.filter((x) => x.id !== id && !x.builtin);
+    saveCustomModels(custom);
+    set({ models: dedupeModels(BUILTIN_MODELS, get().officialModels, custom) });
+  },
+
+  refreshModels: async () => {
+    const key = (get().settings.apiKeys["deepseek"] || "").trim();
+    if (!key || get().modelsRefreshing) return;
+    set({ modelsRefreshing: true });
+    try {
+      const official = await fetchOfficialModels("https://api.deepseek.com/v1", key);
+      saveOfficialModels(official);
+      const custom = get().models.filter((m) => !m.builtin);
+      set({
+        officialModels: official,
+        models: dedupeModels(BUILTIN_MODELS, official, custom),
+      });
+    } catch {
+      /* 拉取失败则静默，保留内置与缓存 */
+    } finally {
+      set({ modelsRefreshing: false });
+    }
   },
 
   selectModel: (id) => {
-    saveSelected(id);
-    set({ settings: { ...get().settings, defaultModelId: id } });
+    get().setSettings({ defaultModelId: id });
     const conv = get().activeConversation();
     if (conv) {
       get().updateConversation(conv.id, (c) => ({ ...c, modelId: id }));
@@ -216,6 +247,7 @@ useAppStore.subscribe((state) => {
       conversations: state.conversations,
       settings: state.settings,
       models: state.models,
+      officialModels: state.officialModels,
       selected: state.activeId ?? state.settings.defaultModelId,
     });
   }, 400);
