@@ -226,7 +226,25 @@ fn start_dsh(app: tauri::AppHandle, state: State<DshProcess>) -> Result<String, 
         .map_err(|e| format!("启动 dsh 失败: {e}"))?;
 
     *state.0.lock().unwrap() = Some(child);
-    Ok("dsh started".into())
+
+    // 轮询 3080 端口，等待 dsh 就绪（最多 90 秒，每 500ms 一次）
+    for _ in 0..180 {
+        if std::net::TcpStream::connect(("127.0.0.1", 3080)).is_ok() {
+            return Ok("dsh ready".into());
+        }
+        let exited = state
+            .0
+            .lock()
+            .unwrap()
+            .as_mut()
+            .and_then(|c| c.try_wait().ok().flatten())
+            .is_some();
+        if exited {
+            return Err("dsh 进程启动后意外退出".into());
+        }
+        std::thread::sleep(std::time::Duration::from_millis(500));
+    }
+    Err("dsh 启动超时".into())
 }
 
 #[tauri::command]
@@ -240,6 +258,36 @@ fn stop_dsh(state: State<DshProcess>) {
 #[tauri::command]
 fn dsh_status(state: State<DshProcess>) -> bool {
     state.0.lock().unwrap().is_some()
+}
+
+#[derive(Serialize)]
+struct UpdateInfo {
+    version: String,
+    url: String,
+}
+
+#[tauri::command]
+fn check_update() -> Option<UpdateInfo> {
+    let output = Command::new("curl")
+        .args([
+            "-s",
+            "--max-time",
+            "8",
+            "https://api.github.com/repos/yuntaojinghong/StarCore/releases/latest",
+        ])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).ok()?;
+    let version = json.get("tag_name")?.as_str()?.to_string();
+    let url = json
+        .get("html_url")
+        .and_then(|v| v.as_str())
+        .unwrap_or("https://github.com/yuntaojinghong/StarCore/releases")
+        .to_string();
+    Some(UpdateInfo { version, url })
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -256,7 +304,8 @@ pub fn run() {
             notify,
             start_dsh,
             stop_dsh,
-            dsh_status
+            dsh_status,
+            check_update
         ])
         .setup(|app| {
             let show_i = MenuItem::with_id(app, "show", "显示主界面", true, None::<&str>)?;

@@ -25,6 +25,7 @@ export default function App() {
 
   const [booting, setBooting] = useState(isTauri());
   const [bootError, setBootError] = useState<string | null>(null);
+  const [updateInfo, setUpdateInfo] = useState<{ version: string; url: string } | null>(null);
 
   useEffect(() => {
     hydrate();
@@ -64,19 +65,11 @@ export default function App() {
     (async () => {
       try {
         const { invoke } = await import("@tauri-apps/api/core");
+        // Rust 端会阻塞直到 dsh 服务就绪（或超时/失败）
         await invoke("start_dsh");
-        for (let i = 0; i < 90; i++) {
-          if (cancelled) return;
-          try {
-            await fetch("http://127.0.0.1:3080", { mode: "no-cors" });
-            window.location.href = "http://127.0.0.1:3080";
-            return;
-          } catch {
-            /* 服务未就绪，继续等待 */
-          }
-          await new Promise((r) => setTimeout(r, 1000));
+        if (!cancelled) {
+          window.location.href = "http://127.0.0.1:3080";
         }
-        if (!cancelled) setBootError("DeepSeek Harness 服务启动超时，请重试。");
       } catch (e) {
         if (!cancelled) setBootError(`启动失败：${String(e)}`);
       }
@@ -84,6 +77,23 @@ export default function App() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    if (!isTauri()) return;
+    (async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const { getVersion } = await import("@tauri-apps/api/app");
+        const latest = await invoke<{ version: string; url: string } | null>("check_update");
+        const current = await getVersion();
+        if (latest && latest.version !== `v${current}`) {
+          setUpdateInfo(latest);
+        }
+      } catch {
+        /* 检查更新失败则静默跳过 */
+      }
+    })();
   }, []);
 
   if (booting) {
@@ -107,6 +117,28 @@ export default function App() {
           <button className="btn" onClick={() => window.location.reload()}>
             重试
           </button>
+        )}
+        {updateInfo && !bootError && (
+          <div
+            style={{
+              marginTop: 4,
+              padding: "8px 14px",
+              borderRadius: 10,
+              background: "var(--primary-weak)",
+              color: "var(--primary)",
+              fontSize: 12.5,
+            }}
+          >
+            发现新版本 <b>{updateInfo.version}</b>，可
+            <a
+              href={updateInfo.url}
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: "var(--primary)", fontWeight: 600, textDecoration: "underline" }}
+            >
+              前往下载
+            </a>
+          </div>
         )}
       </div>
     );
