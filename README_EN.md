@@ -57,6 +57,12 @@ npm run tauri dev
 npm run tauri build
 ```
 
+## 📥 Download & Install
+
+Get the latest `StarCore_0.1.0_x64-setup.exe` from [Releases](https://github.com/yuntaojinghong/StarCore/releases) and double-click to install (installs to the user directory, no admin required, creates a desktop shortcut automatically).
+
+> Prefer portable? Place an empty `portable.flag` file next to the app directory and data will follow the app — copy the whole folder to a USB stick and use it anywhere.
+
 ## 🎬 Getting Started
 
 1. Follow the welcome wizard: enter your DeepSeek API Key (from platform.deepseek.com) and choose a working directory
@@ -85,7 +91,7 @@ If you find this project useful, please give it a **Star ⭐** — your support 
 
 ## 📄 License
 
-[MIT](./LICENSE) © 2026 StarCore Contributors
+[MIT](./LICENSE) © 2026 [yuntaojinghong](https://github.com/yuntaojinghong)
 
 ## 🤝 Contributing
 

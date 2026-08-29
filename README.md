@@ -57,6 +57,12 @@ npm run tauri dev
 npm run tauri build
 ```
 
+## 📥 下载安装
+
+前往 [Releases](https://github.com/yuntaojinghong/StarCore/releases) 下载最新的 `StarCore_0.1.0_x64-setup.exe`，双击安装即可（默认装到用户目录，无需管理员权限，自动创建桌面快捷方式）。
+
+> 想绿色便携使用？在安装目录旁放置一个空的 `portable.flag` 文件，数据就会跟随应用目录存储，整个文件夹拷到 U 盘即可随处使用。
+
 ## 🎬 首次使用
 
 1. 启动后按欢迎页引导，填入 DeepSeek API Key（platform.deepseek.com 获取）并选择工作目录
@@ -85,7 +91,7 @@ deepseek-harness-desktop/
 
 ## 📄 License
 
-[MIT](./LICENSE) © 2026 StarCore Contributors
+[MIT](./LICENSE) © 2026 [yuntaojinghong](https://github.com/yuntaojinghong)
 
 ## 🤝 贡献
 
