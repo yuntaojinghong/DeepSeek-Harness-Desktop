@@ -185,24 +185,29 @@ fn list_dir(path: String) -> Vec<DirEntry> {
     out
 }
 
+fn find_resource(app: &tauri::AppHandle, relative: &str) -> Option<PathBuf> {
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    if let Ok(res) = app.path().resource_dir() {
+        candidates.push(res.join(relative));
+        candidates.push(res.join("resources").join(relative));
+        candidates.push(res.join("_up_").join(relative));
+        candidates.push(res.join("_up_").join("resources").join(relative));
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            candidates.push(dir.join(relative));
+            candidates.push(dir.join("resources").join(relative));
+            candidates.push(dir.join("_up_").join("resources").join(relative));
+        }
+    }
+    candidates.into_iter().find(|p| p.exists())
+}
+
 #[tauri::command]
 fn start_dsh(app: tauri::AppHandle, state: State<DshProcess>) -> Result<String, String> {
-    let res = app.path().resource_dir().map_err(|e| e.to_string())?;
-    let node = res.join("node").join("node.exe");
-    let dsh_bin = res
-        .join("dsh")
-        .join("node_modules")
-        .join("@deepseek-ai")
-        .join("dsh")
-        .join("lib")
-        .join("bin.js");
-
-    if !node.exists() {
-        return Err(format!("内置 Node 缺失: {}", node.display()));
-    }
-    if !dsh_bin.exists() {
-        return Err(format!("dsh 缺失: {}", dsh_bin.display()));
-    }
+    let node = find_resource(&app, "node/node.exe").ok_or_else(|| "内置 Node 缺失".to_string())?;
+    let dsh_bin = find_resource(&app, "dsh/node_modules/@deepseek-ai/dsh/lib/bin.js")
+        .ok_or_else(|| "dsh 缺失".to_string())?;
 
     if let Some(mut c) = state.0.lock().unwrap().take() {
         let _ = c.kill();
