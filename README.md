@@ -1,8 +1,8 @@
-# 深驭 DeepHarness 桌面版
+# 星核 StarCore 桌面版
 
 开箱即用的 DeepSeek AI 桌面工作台：双击即用、自动补齐运行环境、多模型切换、Agent 工具调用。
 
-> **深驭**：取自 DeepSeek 的「深」与 Harness 的「驭」，寓意「驾驭深度智能」。
+> **星核 StarCore**：驾驭星辰智能的能量核心——科幻风 AI 工作台。
 
 ## 技术栈
 
@@ -66,7 +66,7 @@ deepseek-harness-desktop/
 
 ## License
 
-[MIT](./LICENSE) © 2026 DeepHarness Contributors
+[MIT](./LICENSE) © 2026 StarCore Contributors
 
 ## 贡献
 

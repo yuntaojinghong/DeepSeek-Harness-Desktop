@@ -1,11 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <defs>
-    <linearGradient id="dhg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#4d6bfe"/>
-      <stop offset="1" stop-color="#8b5cf6"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1226"/>
+      <stop offset="1" stop-color="#1b1040"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#4d6bfe"/>
     </linearGradient>
   </defs>
-  <rect width="1024" height="1024" rx="230" fill="url(#dhg)"/>
-  <path d="M512 196 C 542 446 588 482 828 512 C 588 542 542 588 512 828 C 482 588 436 542 196 512 C 436 482 482 446 512 196 Z" fill="#ffffff"/>
-  <circle cx="770" cy="254" r="42" fill="#ffffff" opacity="0.9"/>
+  <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+  <circle cx="196" cy="232" r="7" fill="#6d84ff"/>
+  <circle cx="836" cy="178" r="6" fill="#6d84ff"/>
+  <circle cx="802" cy="782" r="7" fill="#6d84ff"/>
+  <circle cx="182" cy="752" r="5" fill="#6d84ff"/>
+  <circle cx="522" cy="152" r="5" fill="#38bdf8"/>
+  <circle cx="168" cy="500" r="5" fill="#38bdf8"/>
+  <g transform="rotate(-24 512 512)">
+    <ellipse cx="512" cy="512" rx="330" ry="126" fill="none" stroke="#22d3ee" stroke-width="12" opacity="0.75"/>
+    <circle cx="842" cy="512" r="18" fill="#67e8f9"/>
+  </g>
+  <circle cx="512" cy="512" r="176" fill="url(#core)"/>
+  <circle cx="512" cy="512" r="176" fill="none" stroke="#7dd3fc" stroke-width="4" opacity="0.55"/>
+  <circle cx="462" cy="452" r="52" fill="#ffffff" opacity="0.28"/>
+  <path d="M512 392 C 528 478 546 496 632 512 C 546 528 528 546 512 632 C 496 546 478 528 392 512 C 478 496 496 478 512 392 Z" fill="#ffffff"/>
 </svg>

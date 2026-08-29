@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "../store";
 import { ChevronDownIcon, GearIcon, MoonIcon, PanelLeftIcon, PanelRightIcon, SunIcon } from "./Icons";
 import LogoMark from "./Logo";
+import ModelIcon from "./ModelIcon";
 
 export default function TitleBar() {
   const models = useAppStore((s) => s.models);
@@ -38,9 +39,9 @@ export default function TitleBar() {
     <div className="titlebar">
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <LogoMark size={30} />
-        <span style={{ fontSize: 14.5, fontWeight: 600, letterSpacing: 0.2 }}>
-          深驭
-          <span style={{ color: "var(--text-tertiary)", fontWeight: 400, fontSize: 12.5, marginLeft: 6 }}>DeepHarness</span>
+        <span style={{ fontSize: 14.5, fontWeight: 600, letterSpacing: 0.4 }}>
+          星核
+          <span style={{ color: "var(--text-tertiary)", fontWeight: 400, fontSize: 12.5, marginLeft: 6 }}>StarCore</span>
         </span>
       </div>
 
@@ -53,15 +54,7 @@ export default function TitleBar() {
       <div ref={menuRef} style={{ position: "relative" }}>
         <button className="btn" style={{ minWidth: 180, justifyContent: "space-between" }} onClick={() => setMenuOpen(!menuOpen)}>
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: 2,
-                background: "var(--primary)",
-                display: "inline-block",
-              }}
-            />
+            <ModelIcon provider={selected?.provider ?? "custom"} size={20} />
             <span style={{ fontWeight: 500 }}>{selected?.name ?? "选择模型"}</span>
           </span>
           <ChevronDownIcon size={14} />
@@ -78,6 +71,7 @@ export default function TitleBar() {
                   setMenuOpen(false);
                 }}
               >
+                <ModelIcon provider={m.provider} size={24} />
                 <span style={{ flex: 1 }}>
                   <div style={{ fontSize: 13 }}>{m.name}</div>
                   <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 1 }}>

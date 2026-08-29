@@ -3,6 +3,7 @@ import { useAppStore } from "../store";
 import type { ModelConfig } from "../types";
 import { uid } from "../lib/storage";
 import { CloseIcon, TrashIcon } from "./Icons";
+import ModelIcon from "./ModelIcon";
 
 export default function SettingsModal() {
   const settings = useAppStore((s) => s.settings);
@@ -121,9 +122,10 @@ export default function SettingsModal() {
               {models.map((m) => (
                 <div className="field-card" key={m.id}>
                   <div className="field-card-title">
-                    <span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <ModelIcon provider={m.provider} size={22} />
                       {m.name}
-                      {m.builtin && <span style={{ marginLeft: 8, fontSize: 11, color: "var(--text-tertiary)" }}>内置</span>}
+                      {m.builtin && <span style={{ marginLeft: 4, fontSize: 11, color: "var(--text-tertiary)" }}>内置</span>}
                     </span>
                     {!m.builtin && (
                       <button className="btn-icon btn-ghost" style={{ width: 26, height: 26, color: "var(--danger)" }} onClick={() => removeModel(m.id)}>

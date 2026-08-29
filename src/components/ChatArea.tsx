@@ -227,7 +227,7 @@ export default function ChatArea() {
           <div className="logo-float"><LogoMark size={64} radius={18} /></div>
           <div>
             <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text)" }}>开始一段新的对话</div>
-            <div style={{ fontSize: 13, marginTop: 6 }}>深驭 DeepHarness · 选择模型后即可开始</div>
+            <div style={{ fontSize: 13, marginTop: 6 }}>星核 StarCore · 选择模型后即可开始</div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, maxWidth: 500, width: "100%" }}>
             {SUGGESTIONS.map((s) => (

@@ -22,7 +22,7 @@ export function saveConversations(list: Conversation[]) {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  theme: "light",
+  theme: "dark",
   apiKeys: {},
   fontSize: 14,
   density: "comfortable",
