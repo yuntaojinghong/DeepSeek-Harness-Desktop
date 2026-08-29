@@ -1,0 +1,8 @@
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+rustup-init.exe
+vs_buildtools.exe
+*.log
+.DS_Store
