@@ -27,7 +27,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   fontSize: 14,
   density: "comfortable",
   workspace: "",
-  defaultModelId: "deepseek-chat",
+  defaultModelId: "deepseek-v4-flash",
 };
 
 export function loadSettings(): AppSettings {
@@ -44,33 +44,33 @@ export function saveSettings(s: AppSettings) {
 
 export const BUILTIN_MODELS: ModelConfig[] = [
   {
-    id: "deepseek-chat",
-    name: "DeepSeek V3.2",
+    id: "deepseek-v4-flash",
+    name: "DeepSeek V4 Flash",
     provider: "deepseek",
     baseUrl: "https://api.deepseek.com/v1",
-    model: "deepseek-chat",
-    contextWindow: 128000,
+    model: "deepseek-v4-flash",
+    contextWindow: 1000000,
     supportsTools: true,
     builtin: true,
   },
   {
-    id: "deepseek-reasoner",
-    name: "DeepSeek R1 (推理)",
+    id: "deepseek-v4-pro",
+    name: "DeepSeek V4 Pro",
     provider: "deepseek",
     baseUrl: "https://api.deepseek.com/v1",
-    model: "deepseek-reasoner",
-    contextWindow: 128000,
-    supportsTools: false,
+    model: "deepseek-v4-pro",
+    contextWindow: 1000000,
+    supportsTools: true,
     builtin: true,
   },
   {
-    id: "deepseek-r1-0528",
-    name: "DeepSeek R1-0528",
+    id: "deepseek-v4-flash-vision-exp",
+    name: "DeepSeek V4 Vision",
     provider: "deepseek",
     baseUrl: "https://api.deepseek.com/v1",
-    model: "deepseek-reasoner",
-    contextWindow: 128000,
-    supportsTools: false,
+    model: "deepseek-v4-flash-vision-exp",
+    contextWindow: 1000000,
+    supportsTools: true,
     builtin: true,
   },
 ];
@@ -90,7 +90,7 @@ export function saveModels(list: ModelConfig[]) {
 }
 
 export function loadSelected(): string {
-  return localStorage.getItem(K_SELECTED) || "deepseek-chat";
+  return localStorage.getItem(K_SELECTED) || "deepseek-v4-flash";
 }
 
 export function saveSelected(id: string) {
@@ -175,7 +175,7 @@ export async function readDiskData(): Promise<DiskData | null> {
       conversations: parsed.conversations ?? [],
       settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
       models: [...BUILTIN_MODELS, ...(parsed.models ?? []).filter((m) => !m.builtin)],
-      selected: parsed.selected ?? "deepseek-chat",
+      selected: parsed.selected ?? "deepseek-v4-flash",
     };
   } catch {
     return null;
