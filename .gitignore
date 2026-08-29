@@ -5,5 +5,7 @@ src-tauri/gen/
 rustup-init.exe
 vs_buildtools.exe
 vite.config.ts.timestamp-*.mjs
+ghcli/
+gh.zip
 *.log
 .DS_Store
