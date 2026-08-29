@@ -15,3 +15,5 @@ dsh-pkg.zip
 .npm-cache/
 *.log
 .DS_Store
+
+StarCore_*.exe
